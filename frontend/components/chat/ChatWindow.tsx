@@ -28,7 +28,7 @@ export function ChatWindow() {
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
         {messages.length === 0 && (
           <p className="text-zinc-400 text-center mt-20">
-            Hola, soy Synapse. ¿Qué querés aprender hoy?
+            Holas, soy Synapse. ¿Qué querés aprender hoy?
           </p>
         )}
         {messages.map((m) => (
@@ -37,11 +37,10 @@ export function ChatWindow() {
             className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                m.role === "user"
+              className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${m.role === "user"
                   ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
                   : "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-              }`}
+                }`}
             >
               {m.parts?.map((part, i) =>
                 part.type === "text" ? <span key={i}>{part.text}</span> : null
