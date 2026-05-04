@@ -2,8 +2,6 @@ import { NextRequest } from "next/server";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { randomUUID } from "crypto";
 
-const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
-
 async function* readLines(body: ReadableStream<Uint8Array>) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -25,7 +23,7 @@ async function* readLines(body: ReadableStream<Uint8Array>) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const backendRes = await fetch(`${BACKEND_URL}/api/chat`, {
+  const backendRes = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
