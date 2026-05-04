@@ -1,4 +1,9 @@
 {
+  "deploymentProtection": {
+    "preview": {
+      "allowlist": []
+    }
+  },
   "experimentalServices": {
     "frontend": {
       "entrypoint": "frontend",
