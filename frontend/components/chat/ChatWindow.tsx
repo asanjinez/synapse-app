@@ -28,7 +28,7 @@ export function ChatWindow() {
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
         {messages.length === 0 && (
           <p className="text-zinc-400 text-center mt-20">
-            Holagh, soy Synapse. ¿Qué querés aprender hoy?
+            Hola#6, soy Synapse. ¿Qué querés aprender hoy?
           </p>
         )}
         {messages.map((m) => (
