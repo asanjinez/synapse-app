@@ -49,3 +49,4 @@ backend/dist/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+*:Zone.Identifier
