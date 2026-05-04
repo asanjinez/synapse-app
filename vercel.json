@@ -5,7 +5,8 @@
     },
     "backend": {
       "entrypoint": "backend/main.py",
-      "routePrefix": "/api"
+      "routePrefix": "/api",
+      "runtime": "python"
     }
   }
 }
