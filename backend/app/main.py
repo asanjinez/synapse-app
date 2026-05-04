@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
     logger.info("[v0] ===== APP SHUTDOWN =====")
 
 
+# [v0] Debug version: 2024-01-15-v1
 app = FastAPI(title="Synapse API", lifespan=lifespan)
 
 app.add_middleware(
