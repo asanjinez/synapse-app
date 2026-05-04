@@ -23,14 +23,51 @@ async function* readLines(body: ReadableStream<Uint8Array>) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  const backendRes = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // [v0] Debug: Log incoming request
+  console.log("[v0] Chat API called with body:", JSON.stringify(body, null, 2));
+
+  // Construct the backend URL properly
+  // In Vercel experimentalServices, the backend is at /api on the same origin
+  const backendUrl = new URL("/api/chat", req.url);
+  console.log("[v0] Calling backend at:", backendUrl.toString());
+  console.log("[v0] Request origin:", req.url);
+
+  let backendRes: Response;
+  try {
+    backendRes = await fetch(backendUrl.toString(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    console.log("[v0] Backend response status:", backendRes.status);
+    console.log("[v0] Backend response headers:", Object.fromEntries(backendRes.headers.entries()));
+  } catch (fetchError) {
+    console.error("[v0] Fetch to backend failed:", fetchError);
+    return new Response(
+      JSON.stringify({
+        error: "Backend fetch failed",
+        details: fetchError instanceof Error ? fetchError.message : String(fetchError),
+      }),
+      { status: 502, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
   if (!backendRes.ok || !backendRes.body) {
-    return new Response("Backend unavailable", { status: 502 });
+    // [v0] Debug: Log error details
+    const errorText = await backendRes.text().catch(() => "Could not read error body");
+    console.error("[v0] Backend error response:", {
+      status: backendRes.status,
+      statusText: backendRes.statusText,
+      body: errorText,
+    });
+    return new Response(
+      JSON.stringify({
+        error: "Backend unavailable",
+        status: backendRes.status,
+        details: errorText,
+      }),
+      { status: 502, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   const stream = createUIMessageStream({
