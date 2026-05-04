@@ -28,17 +28,25 @@ async def lifespan(app: FastAPI):
         "VERCEL_AI_GATEWAY_KEY": "set" if os.getenv("VERCEL_AI_GATEWAY_KEY") else "NOT SET",
         "MODEL_NAME": os.getenv("MODEL_NAME", "default"),
         "FRONTEND_URL": os.getenv("FRONTEND_URL", "NOT SET"),
+        "BACKEND_URL": os.getenv("BACKEND_URL", "NOT SET"),
     }
     logger.info(f"[v0] Environment check: {env_check}")
     
+    # Make persistence initialization non-fatal for debugging
+    # This allows the app to start even if DB is not configured
     try:
-        logger.info("[v0] Initializing persistence...")
-        await init_persistence()
-        logger.info("[v0] Persistence initialized successfully")
+        if os.getenv("DATABASE_URL"):
+            logger.info("[v0] Initializing persistence...")
+            await init_persistence()
+            logger.info("[v0] Persistence initialized successfully")
+        else:
+            logger.warning("[v0] DATABASE_URL not set - skipping persistence initialization")
+            logger.warning("[v0] Chat will fail without database connection")
     except Exception as e:
         logger.error(f"[v0] Failed to initialize persistence: {e}")
         logger.error(f"[v0] Traceback: {traceback.format_exc()}")
-        raise
+        # Don't raise - allow app to start for debugging
+        logger.warning("[v0] App will start but chat functionality will be broken")
     
     logger.info("[v0] ===== APP READY =====")
     yield
@@ -68,7 +76,8 @@ async def health():
 
 
 # [v0] Debug endpoint to check environment and configuration
-@app.get("/api/debug")
+# With routePrefix "/backend", this will be accessible at /backend/debug
+@app.get("/debug")
 async def debug():
     """Debug endpoint to check environment configuration. Remove in production."""
     from app.agent.checkpointer import _pool, _checkpointer, _store
