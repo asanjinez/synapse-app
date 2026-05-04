@@ -38,7 +38,7 @@ def _to_lc_messages(messages: list[dict]) -> list:
     return result
 
 
-@router.post("/api/chat")
+@router.post("/chat")
 async def chat(
     request: ChatRequest,
     x_user_id: str | None = Header(None),
