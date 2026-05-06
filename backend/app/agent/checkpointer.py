@@ -1,7 +1,10 @@
 import os
+import logging
 from psycopg_pool import AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres.aio import AsyncPostgresStore
+
+logger = logging.getLogger("synapse.checkpointer")
 
 _pool: AsyncConnectionPool | None = None
 _checkpointer: AsyncPostgresSaver | None = None
@@ -17,6 +20,7 @@ async def init_persistence() -> None:
     global _pool, _checkpointer, _store
 
     db_url = _get_db_url()
+    logger.info("opening connection pool")
     _pool = AsyncConnectionPool(
         db_url,
         max_size=10,
@@ -24,12 +28,15 @@ async def init_persistence() -> None:
         kwargs={"autocommit": True},
     )
     await _pool.open()
+    logger.info("pool open — setting up checkpointer")
 
     _checkpointer = AsyncPostgresSaver(_pool)
     await _checkpointer.setup()
+    logger.info("checkpointer ready")
 
     _store = AsyncPostgresStore(_pool)
     await _store.setup()
+    logger.info("store ready — persistence initialized")
 
 
 def get_checkpointer() -> AsyncPostgresSaver:

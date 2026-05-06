@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { randomUUID } from "crypto";
 
-const BACKEND_URL = process.env.BACKEND_URL;
+const BACKEND_URL = (process.env.BACKEND_URL ?? "").replace(/\/$/, "");
 
 async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
   const res = await fetch(`${BACKEND_URL}/api/chat`, {
@@ -11,7 +11,10 @@ async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
     body: JSON.stringify({ messages, user_id: "anonymous" }),
   });
 
-  if (!res.body) return;
+  if (!res.ok || !res.body) {
+    yield `[ERROR] backend returned ${res.status}`;
+    return;
+  }
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -22,9 +25,10 @@ async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
 
     const text = decoder.decode(value, { stream: true });
     for (const line of text.split("\n")) {
-      if (line.startsWith("data: ") && !line.includes("[DONE]")) {
-        yield line.slice(6).replace(/\\n/g, "\n");
-      }
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6);
+      if (data.includes("[DONE]")) break;
+      yield data.replace(/\\n/g, "\n");
     }
   }
 }

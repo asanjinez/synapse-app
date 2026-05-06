@@ -1,4 +1,5 @@
 import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.upload import router as upload_router
 from app.agent.checkpointer import init_persistence
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s | %(name)s | %(message)s",
+)
 
 
 @asynccontextmanager
