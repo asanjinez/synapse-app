@@ -17,7 +17,12 @@ async def init_persistence() -> None:
     global _pool, _checkpointer, _store
 
     db_url = _get_db_url()
-    _pool = AsyncConnectionPool(db_url, max_size=10, open=False)
+    _pool = AsyncConnectionPool(
+        db_url,
+        max_size=10,
+        open=False,
+        kwargs={"autocommit": True},
+    )
     await _pool.open()
 
     _checkpointer = AsyncPostgresSaver(_pool)
