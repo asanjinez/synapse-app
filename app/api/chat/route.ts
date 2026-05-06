@@ -23,7 +23,7 @@ async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
     const text = decoder.decode(value, { stream: true });
     for (const line of text.split("\n")) {
       if (line.startsWith("data: ") && !line.includes("[DONE]")) {
-        yield line.slice(6).trim();
+        yield line.slice(6).replace(/\\n/g, "\n");
       }
     }
   }
