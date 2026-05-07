@@ -54,10 +54,10 @@ async def update_mastery(user_id: str, node_id: str, score: int, pool) -> dict:
             """
             SELECT id, stability, difficulty, next_review_at
             FROM fsrs_items
-            WHERE user_id = $1 AND node_id = $2
+            WHERE user_id = %s AND node_id = %s
             LIMIT 1
             """,
-            user_id, node_id,
+            (user_id, node_id),
         )).fetchone()
 
         if row is None:
@@ -65,14 +65,14 @@ async def update_mastery(user_id: str, node_id: str, score: int, pool) -> dict:
             await conn.execute(
                 """
                 INSERT INTO fsrs_items (user_id, node_id)
-                VALUES ($1, $2)
+                VALUES (%s, %s)
                 ON CONFLICT DO NOTHING
                 """,
-                user_id, node_id,
+                (user_id, node_id),
             )
             row = await (await conn.execute(
-                "SELECT id, stability, difficulty, next_review_at FROM fsrs_items WHERE user_id=$1 AND node_id=$2",
-                user_id, node_id,
+                "SELECT id, stability, difficulty, next_review_at FROM fsrs_items WHERE user_id=%s AND node_id=%s",
+                (user_id, node_id),
             )).fetchone()
 
         card = _card_from_db(dict(row))
@@ -88,15 +88,15 @@ async def update_mastery(user_id: str, node_id: str, score: int, pool) -> dict:
         await conn.execute(
             """
             UPDATE fsrs_items
-            SET stability=$1, difficulty=$2, retrievability=$3,
-                next_review_at=$4, status='pending'
-            WHERE id=$5
+            SET stability=%s, difficulty=%s, retrievability=%s,
+                next_review_at=%s, status='pending'
+            WHERE id=%s
             """,
-            new_stability, new_difficulty, new_retrievability, next_review, row["id"],
+            (new_stability, new_difficulty, new_retrievability, next_review, row["id"]),
         )
         await conn.execute(
-            "UPDATE roadmap_nodes SET mastery_pct=$1 WHERE id=$2",
-            mastery_pct, node_id,
+            "UPDATE roadmap_nodes SET mastery_pct=%s WHERE id=%s",
+            (mastery_pct, node_id),
         )
 
     logger.info(
@@ -123,13 +123,13 @@ async def get_next_review_items(user_id: str, pool, emergency: bool = False) -> 
                    fi.next_review_at, rn.topic
             FROM fsrs_items fi
             JOIN roadmap_nodes rn ON fi.node_id = rn.id
-            WHERE fi.user_id = $1
+            WHERE fi.user_id = %s
               AND fi.next_review_at <= NOW()
               AND fi.status = 'pending'
             ORDER BY {order}
             LIMIT 20
             """,
-            user_id,
+            (user_id,),
         )).fetchall()
 
     return [dict(r) for r in rows]
@@ -153,5 +153,5 @@ async def get_overdue_items(pool) -> list[dict]:
 async def mark_notified(item_id: str, pool) -> None:
     async with pool.connection() as conn:
         await conn.execute(
-            "UPDATE fsrs_items SET status='notified' WHERE id=$1", item_id
+            "UPDATE fsrs_items SET status='notified' WHERE id=%s", (item_id,)
         )

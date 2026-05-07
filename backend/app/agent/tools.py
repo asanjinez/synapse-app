@@ -26,10 +26,10 @@ async def get_roadmap(user_id: str) -> list[dict]:
             """
             SELECT id, topic, parent_id, status, target_date, mastery_pct
             FROM roadmap_nodes
-            WHERE user_id = $1
+            WHERE user_id = %s
             ORDER BY target_date ASC NULLS LAST
             """,
-            user_id,
+            (user_id,),
         )).fetchall()
     return [dict(r) for r in rows]
 
@@ -76,24 +76,21 @@ async def update_roadmap(user_id: str, changes: dict) -> str:
     async with pool.connection() as conn:
         if action == "complete":
             await conn.execute(
-                "UPDATE roadmap_nodes SET status='completed' WHERE id=$1 AND user_id=$2",
-                changes["node_id"], user_id,
+                "UPDATE roadmap_nodes SET status='completed' WHERE id=%s AND user_id=%s",
+                (changes["node_id"], user_id),
             )
         elif action == "add":
             await conn.execute(
                 """
                 INSERT INTO roadmap_nodes (user_id, topic, parent_id, target_date)
-                VALUES ($1, $2, $3, $4::date)
+                VALUES (%s, %s, %s, %s::date)
                 """,
-                user_id,
-                changes.get("topic"),
-                changes.get("parent_id"),
-                changes.get("target_date"),
+                (user_id, changes.get("topic"), changes.get("parent_id"), changes.get("target_date")),
             )
         elif action == "reprioritize":
             await conn.execute(
-                "UPDATE roadmap_nodes SET target_date=$1::date WHERE id=$2 AND user_id=$3",
-                changes.get("target_date"), changes["node_id"], user_id,
+                "UPDATE roadmap_nodes SET target_date=%s::date WHERE id=%s AND user_id=%s",
+                (changes.get("target_date"), changes["node_id"], user_id),
             )
         else:
             return f"Unknown action: {action}"

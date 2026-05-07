@@ -82,10 +82,10 @@ async def _create_source(user_id: str, filename: str, pool) -> str:
         row = await (await conn.execute(
             """
             INSERT INTO sources (user_id, type, name, status)
-            VALUES ($1, 'pdf', $2, 'processing')
+            VALUES (%s, 'pdf', %s, 'processing')
             RETURNING id
             """,
-            user_id, filename,
+            (user_id, filename),
         )).fetchone()
     return str(row["id"])
 
@@ -93,8 +93,8 @@ async def _create_source(user_id: str, filename: str, pool) -> str:
 async def _update_source_status(source_id: str, status: str, pool) -> None:
     async with pool.connection() as conn:
         await conn.execute(
-            "UPDATE sources SET status=$1 WHERE id=$2",
-            status, source_id,
+            "UPDATE sources SET status=%s WHERE id=%s",
+            (status, source_id),
         )
 
 

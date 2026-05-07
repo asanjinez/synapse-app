@@ -30,14 +30,14 @@ async def search_user_materials(
     async with pool.connection() as conn:
         rows = await (await conn.execute(
             """
-            SELECT sc.content, (sc.embedding <=> $1::vector) AS distance
+            SELECT sc.content, (sc.embedding <=> %s::vector) AS distance
             FROM source_chunks sc
             JOIN sources s ON sc.source_id = s.id
-            WHERE s.user_id = $2
+            WHERE s.user_id = %s
             ORDER BY distance ASC
-            LIMIT $3
+            LIMIT %s
             """,
-            vec_str, user_id, limit,
+            (vec_str, user_id, limit),
         )).fetchall()
 
     return [r["content"] for r in rows]
@@ -54,8 +54,8 @@ async def save_chunks(source_id: str, chunks: list[str], pool) -> None:
             vec_str = _vec_to_pg(embedding)
             async with pool.connection() as conn:
                 await conn.execute(
-                    "INSERT INTO source_chunks (source_id, content, embedding) VALUES ($1, $2, $3::vector)",
-                    source_id, chunk, vec_str,
+                    "INSERT INTO source_chunks (source_id, content, embedding) VALUES (%s, %s, %s::vector)",
+                    (source_id, chunk, vec_str),
                 )
             logger.debug("saved chunk %d/%d for source=%s", i + 1, len(chunks), source_id)
         except Exception:

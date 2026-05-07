@@ -16,6 +16,13 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 
+_stdout_handler = logging.StreamHandler(sys.stdout)
+_stdout_handler.setFormatter(logging.Formatter("%(levelname)s | %(name)s | %(message)s"))
+for _name in ("uvicorn", "uvicorn.access", "uvicorn.error"):
+    _log = logging.getLogger(_name)
+    _log.handlers = [_stdout_handler]
+    _log.propagate = False
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

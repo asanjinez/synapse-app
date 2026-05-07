@@ -23,10 +23,12 @@ async def init_persistence() -> None:
     logger.info("opening connection pool")
     _pool = AsyncConnectionPool(
         db_url,
+        min_size=0,         # don't keep connections open when idle (Neon kills idle SSL)
         max_size=10,
-        max_idle=60,        # recycle idle connections every 60s (Neon kills after ~300s)
+        max_idle=60,        # recycle connections above min_size after 60s idle
         max_lifetime=300,   # hard cap per connection
         open=False,
+        check=AsyncConnectionPool.check_connection,  # validate before returning to caller
         kwargs={
             "autocommit": True,
             "keepalives": 1,
