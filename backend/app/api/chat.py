@@ -39,7 +39,19 @@ async def chat(
     x_user_id: str | None = Header(None),
 ):
     user_id = request.user_id or x_user_id or "demo-user"
-    logger.info("chat request | user_id=%s messages=%d", user_id, len(request.messages))
+    if request.messages:
+        last_msg = request.messages[-1]
+        last_content = last_msg.get("content") or ""
+        attachments = last_msg.get("experimental_attachments") or []
+        files_info = [f"{a.get('name', '?')} ({a.get('contentType', '?')})" for a in attachments] if attachments else []
+        logger.info(
+            "chat request | user_id=%s messages=%d\n  message: %s%s",
+            user_id, len(request.messages),
+            last_content,
+            f"\n  files: {', '.join(files_info)}" if files_info else "",
+        )
+    else:
+        logger.info("chat request | user_id=%s messages=0", user_id)
 
     try:
         from app.agent.graph import get_graph
@@ -72,6 +84,8 @@ async def chat(
                     logger.debug("node start | name=%s", event.get("name"))
                 elif kind == "on_chain_end":
                     logger.debug("node end   | name=%s", event.get("name"))
+                elif kind == "on_tool_start":
+                    logger.info("tool call | name=%s args=%s", event.get("name"), str(event.get("data", {}).get("input", ""))[:200])
                 elif kind == "on_chat_model_start":
                     logger.info("llm call start | node=%s", event.get("name"))
                 elif kind == "on_chat_model_end":

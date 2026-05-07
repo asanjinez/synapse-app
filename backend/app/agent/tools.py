@@ -1,12 +1,39 @@
 """Agent tools — patrón Karpathy: el agente decide activamente qué cargar. (ASA-24)"""
 import logging
 from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.agent.checkpointer import get_store, get_pool
 from app.memory.fsrs import update_mastery as _update_mastery, get_next_review_items as _get_review_items
 from app.memory.vector import search_user_materials as _search_materials
 
 logger = logging.getLogger("synapse.tools")
+
+_THINKING_PROMPT = """\
+Analyze the following problem step by step. Break it down into clear, numbered reasoning steps.
+Be thorough but concise. Your output will be used as context to formulate a final response.
+
+Problem: {problem}
+"""
+
+
+@tool
+async def think_step_by_step(problem: str) -> str:
+    """Reason through a complex problem before responding.
+
+    Use this when designing a study plan, explaining a difficult concept,
+    diagnosing a learning gap, or deciding how to approach a multi-step explanation.
+    Do NOT use for simple factual questions or one-sentence answers.
+    """
+    from app.agent.llm import get_llm
+    llm = get_llm()
+    response = await llm.ainvoke([
+        SystemMessage(content="You are a careful analytical reasoner. Think step by step."),
+        HumanMessage(content=_THINKING_PROMPT.format(problem=problem)),
+    ])
+    reasoning = getattr(response, "content", "") or ""
+    logger.info("think_step_by_step | problem=%s... steps=%d", problem[:60], reasoning.count("\n"))
+    return reasoning
 
 
 @tool
@@ -100,6 +127,7 @@ async def update_roadmap(user_id: str, changes: dict) -> str:
 
 
 ALL_TOOLS = [
+    think_step_by_step,
     read_user_profile,
     get_roadmap,
     update_mastery,
