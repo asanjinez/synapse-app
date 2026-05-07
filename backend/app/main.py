@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -12,6 +13,7 @@ from app.workers.scheduler import start_scheduler, stop_scheduler
 logging.basicConfig(
     level=logging.INFO,
     format="%(levelname)s | %(name)s | %(message)s",
+    stream=sys.stdout,
 )
 
 

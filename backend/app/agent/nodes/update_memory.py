@@ -34,11 +34,12 @@ async def update_memory(state: SynapseState) -> dict:
 
 async def _run_background(user_id: str, messages: list) -> None:
     try:
+        role_map = {"human": "user", "ai": "assistant"}
         messages_dicts = []
         for m in messages:
-            role = getattr(m, "type", "unknown")
+            role = role_map.get(getattr(m, "type", ""), None)
             content = getattr(m, "content", "")
-            if content:
+            if role and content:
                 messages_dicts.append({"role": role, "content": content})
 
         # Save conversation to mem0 for semantic retrieval in future sessions
