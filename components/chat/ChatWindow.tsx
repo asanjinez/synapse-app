@@ -5,6 +5,7 @@ import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef } from "react";
 
 const USER_ID = "dev-user-1";
+const transport = new DefaultChatTransport({ api: "/api/chat" });
 
 export function ChatWindow() {
   const [input, setInput] = useState("");
@@ -13,22 +14,10 @@ export function ChatWindow() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const agentRespondedAtRef = useRef<number | null>(null);
 
-  const transport = new DefaultChatTransport({
-    api: "/api/chat",
-    // response_time_ms se inyecta en cada request via prepareRequestBody
-    prepareRequestBody: ({ messages }) => {
-      const response_time_ms =
-        agentRespondedAtRef.current !== null
-          ? Date.now() - agentRespondedAtRef.current
-          : null;
-      return { messages, response_time_ms };
-    },
-  });
-
   const { messages, sendMessage, status } = useChat({ transport });
   const isLoading = status === "streaming" || status === "submitted";
 
-  // Registrar el momento en que el agente terminó de responder
+  // Registrar cuándo terminó de responder el agente
   useEffect(() => {
     if (status === "ready" && messages.at(-1)?.role === "assistant") {
       agentRespondedAtRef.current = Date.now();
@@ -42,9 +31,16 @@ export function ChatWindow() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+
+    const response_time_ms =
+      agentRespondedAtRef.current !== null
+        ? Date.now() - agentRespondedAtRef.current
+        : null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (sendMessage as any)({ text: input }, { body: { response_time_ms } });
     setInput("");
-    agentRespondedAtRef.current = null; // reset tras enviar
+    agentRespondedAtRef.current = null;
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
