@@ -5,12 +5,15 @@ import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef } from "react";
 
 const transport = new DefaultChatTransport({ api: "/api/chat" });
+const USER_ID = "dev-user-1";
 
 export function ChatWindow() {
   const [input, setInput] = useState("");
   const { messages, sendMessage, status } = useChat({ transport });
   const isLoading = status === "streaming" || status === "submitted";
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -23,8 +26,43 @@ export function ChatWindow() {
     setInput("");
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadStatus("Subiendo...");
+    const form = new FormData();
+    form.append("user_id", USER_ID);
+    form.append("file", file);
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000"}/api/upload`,
+        { method: "POST", body: form }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setUploadStatus(`✓ ${file.name} procesándose en background`);
+      } else {
+        setUploadStatus(`✗ Error: ${data.detail ?? "upload failed"}`);
+      }
+    } catch {
+      setUploadStatus("✗ No se pudo conectar al backend");
+    }
+
+    setTimeout(() => setUploadStatus(null), 4000);
+    e.target.value = "";
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950">
+      {/* Upload status toast */}
+      {uploadStatus && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm px-4 py-2 rounded-xl shadow-lg">
+          {uploadStatus}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 max-w-3xl mx-auto w-full">
         {messages.length === 0 && (
           <p className="text-zinc-400 text-center mt-20">
@@ -67,7 +105,29 @@ export function ChatWindow() {
         onSubmit={handleSubmit}
         className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-4"
       >
-        <div className="max-w-3xl mx-auto flex gap-2">
+        <div className="max-w-3xl mx-auto flex gap-2 items-center">
+          {/* PDF upload button */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            title="Subir PDF"
+            className="rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-3 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="18" x2="12" y2="12"/>
+              <line x1="9" y1="15" x2="15" y2="15"/>
+            </svg>
+          </button>
+
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
