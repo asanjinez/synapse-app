@@ -24,8 +24,16 @@ async def init_persistence() -> None:
     _pool = AsyncConnectionPool(
         db_url,
         max_size=10,
+        max_idle=60,        # recycle idle connections every 60s (Neon kills after ~300s)
+        max_lifetime=300,   # hard cap per connection
         open=False,
-        kwargs={"autocommit": True},
+        kwargs={
+            "autocommit": True,
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        },
     )
     await _pool.open()
     logger.info("pool open — setting up checkpointer")
