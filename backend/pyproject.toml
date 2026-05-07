@@ -19,6 +19,11 @@ dependencies = [
     "apscheduler>=3.10.0",
     "python-dotenv>=1.0.0",
     "fsrs>=1.0.0",
+    # Phase 3
+    "mem0ai>=0.1.0",
+    "docling>=2.0.0",
+    "pypdf>=4.0.0",
+    "httpx>=0.27.0",
 ]
 
 [build-system]

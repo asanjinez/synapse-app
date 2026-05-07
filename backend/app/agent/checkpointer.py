@@ -49,3 +49,9 @@ def get_store() -> AsyncPostgresStore:
     if _store is None:
         raise RuntimeError("Persistence not initialized — call init_persistence() first")
     return _store
+
+
+def get_pool() -> AsyncConnectionPool:
+    if _pool is None:
+        raise RuntimeError("Persistence not initialized — call init_persistence() first")
+    return _pool

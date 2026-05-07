@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.upload import router as upload_router
 from app.agent.checkpointer import init_persistence
+from app.workers.scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,7 +18,9 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_persistence()
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(title="Synapse API", lifespan=lifespan)

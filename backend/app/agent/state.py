@@ -15,4 +15,5 @@ class SynapseState(TypedDict):
     messages: Annotated[list[BaseMessage], operator.add]
     user_id: str
     profile: UserProfile
-    route: Literal["onboarding", "session"]
+    route: Literal["onboarding", "session", "review"]
+    emergency_mode: bool
