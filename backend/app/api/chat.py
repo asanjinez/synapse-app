@@ -6,8 +6,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-from app.config import settings
-
 logger = logging.getLogger("synapse.chat")
 router = APIRouter()
 
@@ -147,7 +145,7 @@ async def chat(
 
     # Process PDF if attached
     new_material: str | None = None
-    if request.pdf_url and settings.blob_read_write_token:
+    if request.pdf_url:
         _, new_material = await _process_pdf_from_blob(request.pdf_url, user_id)
         new_material = new_material or None
 

@@ -16,8 +16,6 @@ class Settings(BaseSettings):
     langchain_project: str = "synapse"
     # Memory (Phase 3)
     mem0_api_key: str = ""
-    # Vercel Blob
-    blob_read_write_token: str = ""
     # CORS
     frontend_url: str = ""
 

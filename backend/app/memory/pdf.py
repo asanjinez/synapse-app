@@ -5,8 +5,6 @@ import tempfile
 
 import httpx
 
-from app.config import settings
-
 logger = logging.getLogger("synapse.pdf")
 
 
@@ -45,11 +43,10 @@ def chunk_text(text: str, chunk_size: int = 512, overlap: int = 50) -> list[str]
 
 
 async def download_from_blob(blob_url: str) -> str:
-    """Download a private Vercel Blob file to a temp file. Returns the temp file path."""
+    """Download a public Vercel Blob file to a temp file. Returns the temp file path."""
     async with httpx.AsyncClient() as client:
         resp = await client.get(
             blob_url,
-            headers={"Authorization": f"Bearer {settings.blob_read_write_token}"},
             follow_redirects=True,
             timeout=60.0,
         )

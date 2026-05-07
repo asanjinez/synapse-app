@@ -10,6 +10,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     onBeforeGenerateToken: async () => ({
       allowedContentTypes: ["application/pdf"],
       addRandomSuffix: true,
+      access: "public" as const,
     }),
     onUploadCompleted: async () => {},
   });

@@ -55,7 +55,7 @@ export function ChatWindow() {
     setUploadStatus("Subiendo a Blob...");
     try {
       const blob = await upload(file.name, file, {
-        access: "private",
+        access: "public",
         handleUploadUrl: "/api/blob/upload",
       });
       setPendingPdf({ name: file.name, url: blob.url });
