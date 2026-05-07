@@ -1,5 +1,6 @@
 """Review node — active recall sessions scheduled by FSRS-6. (ASA-32)"""
 from langchain_core.messages import SystemMessage
+from app.agent.nodes.session import _response_time_hint
 from app.agent.state import SynapseState
 from app.agent.llm import get_llm
 from app.agent.tools import ALL_TOOLS
@@ -48,6 +49,10 @@ async def review_node(state: SynapseState) -> dict:
         context_parts.append(f"Deadline: {profile['deadline']}")
     if emergency:
         context_parts.append("MODO EMERGENCIA ACTIVO — priorizá por fragilidad.")
+
+    response_time_ms = state.get("response_time_ms")
+    if response_time_ms is not None:
+        context_parts.append(_response_time_hint(response_time_ms))
 
     messages = [SystemMessage(content="\n\n".join(context_parts))] + state["messages"]
     response = await llm.ainvoke(messages)

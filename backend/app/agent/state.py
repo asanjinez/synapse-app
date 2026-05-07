@@ -17,3 +17,4 @@ class SynapseState(TypedDict):
     profile: UserProfile
     route: Literal["onboarding", "session", "review"]
     emergency_mode: bool
+    response_time_ms: int | None

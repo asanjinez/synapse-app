@@ -4,16 +4,36 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState, useEffect, useRef } from "react";
 
-const transport = new DefaultChatTransport({ api: "/api/chat" });
 const USER_ID = "dev-user-1";
 
 export function ChatWindow() {
   const [input, setInput] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const agentRespondedAtRef = useRef<number | null>(null);
+
+  const transport = new DefaultChatTransport({
+    api: "/api/chat",
+    // response_time_ms se inyecta en cada request via prepareRequestBody
+    prepareRequestBody: ({ messages }) => {
+      const response_time_ms =
+        agentRespondedAtRef.current !== null
+          ? Date.now() - agentRespondedAtRef.current
+          : null;
+      return { messages, response_time_ms };
+    },
+  });
+
   const { messages, sendMessage, status } = useChat({ transport });
   const isLoading = status === "streaming" || status === "submitted";
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  // Registrar el momento en que el agente terminó de responder
+  useEffect(() => {
+    if (status === "ready" && messages.at(-1)?.role === "assistant") {
+      agentRespondedAtRef.current = Date.now();
+    }
+  }, [status, messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,6 +44,7 @@ export function ChatWindow() {
     if (!input.trim() || isLoading) return;
     sendMessage({ text: input });
     setInput("");
+    agentRespondedAtRef.current = null; // reset tras enviar
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -41,11 +62,11 @@ export function ChatWindow() {
         { method: "POST", body: form }
       );
       const data = await res.json();
-      if (res.ok) {
-        setUploadStatus(`✓ ${file.name} procesándose en background`);
-      } else {
-        setUploadStatus(`✗ Error: ${data.detail ?? "upload failed"}`);
-      }
+      setUploadStatus(
+        res.ok
+          ? `✓ ${file.name} procesándose en background`
+          : `✗ Error: ${data.detail ?? "upload failed"}`
+      );
     } catch {
       setUploadStatus("✗ No se pudo conectar al backend");
     }
@@ -56,7 +77,6 @@ export function ChatWindow() {
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-zinc-950">
-      {/* Upload status toast */}
       {uploadStatus && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm px-4 py-2 rounded-xl shadow-lg">
           {uploadStatus}
@@ -106,7 +126,6 @@ export function ChatWindow() {
         className="border-t border-zinc-200 dark:border-zinc-800 px-4 py-4"
       >
         <div className="max-w-3xl mx-auto flex gap-2 items-center">
-          {/* PDF upload button */}
           <input
             ref={fileRef}
             type="file"

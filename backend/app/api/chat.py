@@ -11,6 +11,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     messages: list[dict]
     user_id: str | None = None
+    response_time_ms: int | None = None
 
 
 def _to_lc_messages(messages: list[dict]) -> list:
@@ -60,7 +61,7 @@ async def chat(
         try:
             logger.info("starting graph stream | user_id=%s", user_id)
             async for event in graph.astream_events(
-                {"messages": lc_messages, "user_id": user_id},
+                {"messages": lc_messages, "user_id": user_id, "response_time_ms": request.response_time_ms},
                 config=config,
                 version="v2",
             ):

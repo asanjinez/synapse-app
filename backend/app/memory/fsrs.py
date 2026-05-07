@@ -1,14 +1,13 @@
 """FSRS-6 spaced repetition logic. (ASA-23)"""
-import math
 import logging
 from datetime import datetime, timezone, date
 from typing import Any
 
-from fsrs import FSRS, Card, Rating
+from fsrs import Scheduler, Card, Rating
 
 logger = logging.getLogger("synapse.fsrs")
 
-_scheduler = FSRS()
+_scheduler = Scheduler()
 
 _SCORE_TO_RATING = {
     0: Rating.Again,
@@ -41,11 +40,8 @@ def _card_from_db(row: dict[str, Any]) -> Card:
     return card
 
 
-def compute_retrievability(stability: float, last_review: datetime | None) -> float:
-    if last_review is None or stability <= 0:
-        return 1.0
-    elapsed = (datetime.now(timezone.utc) - last_review).total_seconds() / 86400
-    return math.exp(-elapsed / stability)
+def compute_retrievability(card: Card) -> float:
+    return _scheduler.get_card_retrievability(card)
 
 
 async def update_mastery(user_id: str, node_id: str, score: int, pool) -> dict:
@@ -80,13 +76,11 @@ async def update_mastery(user_id: str, node_id: str, score: int, pool) -> dict:
             )).fetchone()
 
         card = _card_from_db(dict(row))
-        now = datetime.now(timezone.utc)
-        scheduling = _scheduler.repeat(card, now)
-        updated_card = scheduling[rating].card
+        updated_card, _ = _scheduler.review_card(card, rating)
 
         new_stability = updated_card.stability
         new_difficulty = updated_card.difficulty
-        new_retrievability = compute_retrievability(new_stability, now)
+        new_retrievability = compute_retrievability(updated_card)
         next_review = updated_card.due
 
         mastery_pct = min(100.0, new_retrievability * 100)

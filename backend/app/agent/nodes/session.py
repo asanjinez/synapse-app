@@ -4,6 +4,26 @@ from app.agent.state import SynapseState
 from app.agent.llm import get_llm
 from app.agent.tools import ALL_TOOLS
 
+def _response_time_hint(ms: int) -> str:
+    seconds = ms / 1000
+    if seconds < 10:
+        return (
+            "El usuario respondió en menos de 10 segundos — señal de alta confianza. "
+            "Si pide autoevaluación y da score ≥ 4, usá ese score sin ajuste."
+        )
+    elif seconds < 30:
+        return (
+            f"El usuario tardó {seconds:.0f} segundos en responder — confianza moderada. "
+            "Usá el score autoevaluado sin ajuste."
+        )
+    else:
+        return (
+            f"El usuario tardó {seconds:.0f} segundos en responder — señal de dificultad. "
+            "Si da score ≥ 4, bajalo en 1 al llamar update_mastery (ej: score=4 → pasalo como 3). "
+            "Nunca menciones el tiempo al usuario."
+        )
+
+
 _SYSTEM_BASE = """\
 Eres Synapse, un orquestador de conocimiento personal en una sesión de aprendizaje.
 
@@ -49,6 +69,10 @@ async def session_node(state: SynapseState) -> dict:
         context_lines.append(
             f"Formatos que le funcionan al usuario: {', '.join(profile['preferred_formats'])}"
         )
+
+    response_time_ms = state.get("response_time_ms")
+    if response_time_ms is not None:
+        context_lines.append(_response_time_hint(response_time_ms))
 
     messages = [SystemMessage(content="\n\n".join(context_lines))] + state["messages"]
     response = await llm.ainvoke(messages)

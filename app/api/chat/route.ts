@@ -4,11 +4,14 @@ import { randomUUID } from "crypto";
 
 const BACKEND_URL = (process.env.BACKEND_URL ?? "").replace(/\/$/, "");
 
-async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
+async function* streamFromBackend(
+  messages: unknown[],
+  response_time_ms: number | null
+): AsyncGenerator<string> {
   const res = await fetch(`${BACKEND_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, user_id: "anonymous" }),
+    body: JSON.stringify({ messages, user_id: "dev-user-1", response_time_ms }),
   });
 
   if (!res.ok || !res.body) {
@@ -34,7 +37,8 @@ async function* streamFromBackend(messages: unknown[]): AsyncGenerator<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const { messages } = await req.json();
+  const body = await req.json();
+  const { messages, response_time_ms = null } = body;
   const lastText = messages?.at(-1)?.parts?.[0]?.text ?? "";
 
   const stream = createUIMessageStream({
@@ -43,7 +47,7 @@ export async function POST(req: NextRequest) {
       writer.write({ type: "text-start", id });
 
       if (BACKEND_URL) {
-        for await (const chunk of streamFromBackend(messages)) {
+        for await (const chunk of streamFromBackend(messages, response_time_ms)) {
           writer.write({ type: "text-delta", id, delta: chunk });
         }
       } else {
