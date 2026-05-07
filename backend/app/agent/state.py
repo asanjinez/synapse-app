@@ -18,3 +18,4 @@ class SynapseState(TypedDict):
     route: Literal["onboarding", "session", "review"]
     emergency_mode: bool
     response_time_ms: int | None
+    new_material: str | None  # Topics summary extracted from a PDF uploaded in this turn

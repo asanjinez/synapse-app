@@ -72,6 +72,16 @@ async def session_node(state: SynapseState) -> dict:
     if response_time_ms is not None:
         context_lines.append(_response_time_hint(response_time_ms))
 
+    new_material = state.get("new_material")
+    if new_material:
+        context_lines.append(
+            f"MATERIAL NUEVO RECIBIDO:\n{new_material}\n\n"
+            "El usuario acaba de subir este material. Tu tarea en este turno:\n"
+            "1. Usar think_step_by_step para analizar cómo organizar el roadmap.\n"
+            "2. Llamar update_roadmap para crear los nodos del plan de estudio.\n"
+            "3. Explicarle al usuario el plan que armaste y por qué."
+        )
+
     messages = [SystemMessage(content="\n\n".join(context_lines))] + state["messages"]
     response = await llm.ainvoke(messages)
     return {"messages": [response]}
