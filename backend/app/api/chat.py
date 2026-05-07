@@ -52,7 +52,9 @@ async def chat(
             yield "data: [DONE]\n\n"
         return StreamingResponse(error_stream(), media_type="text/event-stream")
 
-    lc_messages = _to_lc_messages(request.messages)
+    # Solo el último mensaje — el checkpointer ya mantiene el historial completo.
+    # Pasar todos los mensajes duplica el historial y rompe los pares tool_use/tool_result.
+    lc_messages = _to_lc_messages(request.messages[-1:])
     config = {"configurable": {"thread_id": user_id}}
 
     async def generate():
